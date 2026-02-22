@@ -1,5 +1,6 @@
 package com.aleonisp.singlesave.handler;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.core.Authentication;
@@ -18,8 +19,9 @@ public class RedirectSuccessHandler implements ServerAuthenticationSuccessHandle
     }
 
     @Override
-    public Mono<Void> onAuthenticationSuccess(WebFilterExchange webFilterExchange,
-                                              Authentication authentication) {
+    @NonNull
+    public Mono<Void> onAuthenticationSuccess(@NonNull WebFilterExchange webFilterExchange,
+                                              @NonNull Authentication authentication) {
         ServerHttpResponse response = webFilterExchange.getExchange().getResponse();
         response.setStatusCode(HttpStatus.FOUND);
         response.getHeaders().setLocation(location);

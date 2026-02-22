@@ -1,16 +1,17 @@
 package com.aleonisp.singlesave.repository;
 
 import com.aleonisp.singlesave.dto.SavePointDtos.SavePointResponse;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
-@Component
+@Repository
 public class InMemorySavePointStore {
-    private final CopyOnWriteArrayList<SavePointResponse> store = new CopyOnWriteArrayList<>();
+
+    private final ConcurrentLinkedDeque<SavePointResponse> store = new ConcurrentLinkedDeque<>();
 
     public SavePointResponse add(String action) {
         SavePointResponse sp = new SavePointResponse(
@@ -18,7 +19,7 @@ public class InMemorySavePointStore {
                 action,
                 Instant.now()
         );
-        store.add(0, sp);
+        store.addFirst(sp);
         return sp;
     }
 
@@ -27,6 +28,6 @@ public class InMemorySavePointStore {
     }
 
     public SavePointResponse latestOrNull() {
-        return store.isEmpty() ? null : store.get(0);
+        return store.peekFirst();
     }
 }

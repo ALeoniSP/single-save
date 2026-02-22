@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: single-save
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 112091718765-b4l2tohi18av027s7fu35doogmpsb1t0.apps.googleusercontent.com
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - profile
+              - email
+
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/single_save
+    username: single_save
+    password: single_save
+
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.springframework.r2dbc: INFO
+    io.r2dbc.postgresql: INFO

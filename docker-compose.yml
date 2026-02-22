@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: single-save-db
+    environment:
+      POSTGRES_DB: single_save
+      POSTGRES_USER: single_save
+      POSTGRES_PASSWORD: single_save
+    ports:
+      - "5432:5432"
+    volumes:
+      - single_save_pgdata:/var/lib/postgresql/data
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U single_save -d single_save"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  single_save_pgdata:

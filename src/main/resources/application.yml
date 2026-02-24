@@ -1,6 +1,7 @@
 spring:
   application:
     name: single-save
+
   security:
     oauth2:
       client:
@@ -12,6 +13,9 @@ spring:
               - openid
               - profile
               - email
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
 
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/single_save

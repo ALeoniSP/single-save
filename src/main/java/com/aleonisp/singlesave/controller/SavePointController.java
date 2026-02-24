@@ -1,49 +1,44 @@
 package com.aleonisp.singlesave.controller;
 
-import com.aleonisp.singlesave.dto.SavePointDtos.CreateSavePointRequest;
-import com.aleonisp.singlesave.dto.SavePointDtos.SavePointResponse;
-import com.aleonisp.singlesave.repository.InMemorySavePointStore;
+import com.aleonisp.singlesave.dto.CreateSavePointRequest;
+import com.aleonisp.singlesave.dto.SavePointResponse;
+import com.aleonisp.singlesave.service.SavePointService;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/savepoints")
+@RequestMapping("/api/save-points")
 public class SavePointController {
 
-    private final InMemorySavePointStore store;
+    private static final String PROVIDER = "google";
 
-    public SavePointController(InMemorySavePointStore store) {
-        this.store = store;
+    private final SavePointService service;
+
+    public SavePointController(SavePointService service) {
+        this.service = service;
     }
 
     @PostMapping
-    public Mono<ResponseEntity<SavePointResponse>> create(@RequestBody Mono<CreateSavePointRequest> reqMono) {
-        return reqMono
-                .map(req -> req == null ? null : req.action())
-                .map(action -> action == null ? "" : action.trim())
-                .flatMap(action -> {
-                    if (action.isBlank()) {
-                        return Mono.just(ResponseEntity.badRequest().build());
-                    }
-                    SavePointResponse created = store.add(action);
-                    return Mono.just(ResponseEntity.status(HttpStatus.CREATED).body(created));
-                });
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<SavePointResponse> create(@AuthenticationPrincipal OidcUser user,
+                                          @RequestBody Mono<CreateSavePointRequest> reqMono) {
+        String sub = user.getSubject();
+        return reqMono.map(CreateSavePointRequest::action)
+                .flatMap(action -> service.create(PROVIDER, sub, action));
     }
 
     @GetMapping
-    public Flux<SavePointResponse> list() {
-        return Flux.fromIterable(store.list());
+    public Flux<SavePointResponse> list(@AuthenticationPrincipal OidcUser user,
+                                        @RequestParam(name = "limit", defaultValue = "50") int limit) {
+        return service.list(PROVIDER, user.getSubject(), limit);
     }
 
-    @GetMapping("/today")
-    public Mono<ResponseEntity<SavePointResponse>> today() {
-        SavePointResponse latest = store.latestOrNull();
-        if (latest == null) {
-            return Mono.just(ResponseEntity.noContent().build());
-        }
-        return Mono.just(ResponseEntity.ok(latest));
+    @GetMapping("/latest")
+    public Mono<SavePointResponse> latest(@AuthenticationPrincipal OidcUser user) {
+        return service.latest(PROVIDER, user.getSubject());
     }
 }

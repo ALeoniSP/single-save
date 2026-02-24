@@ -10,7 +10,6 @@ services:
       - "5432:5432"
     volumes:
       - single_save_pgdata:/var/lib/postgresql/data
-      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U single_save -d single_save"]
       interval: 5s

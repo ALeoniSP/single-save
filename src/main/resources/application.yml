@@ -22,6 +22,14 @@ spring:
     username: single_save
     password: single_save
 
+  flyway:
+    enabled: true
+    url: jdbc:postgresql://localhost:5432/single_save
+    user: single_save
+    password: single_save
+    locations: classpath:db/migration
+    connect-retries: 10
+
   jackson:
     default-property-inclusion: non_null
 
@@ -30,5 +38,8 @@ server:
 
 logging:
   level:
+    org.flywaydb: INFO
+    org.springframework.boot.autoconfigure.flyway: DEBUG
+    com.zaxxer.hikari: INFO
     org.springframework.r2dbc: INFO
     io.r2dbc.postgresql: INFO

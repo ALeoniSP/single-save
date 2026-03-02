@@ -36,6 +36,6 @@ public class InMemorySavePointStore {
 
     public SavePointResponse latestOrNull(String provider, String providerSubject) {
         CopyOnWriteArrayList<SavePointResponse> list = storeByUser.get(key(provider, providerSubject));
-        return (list == null || list.isEmpty()) ? null : list.get(0);
+        return (list == null || list.isEmpty()) ? null : list.getFirst();
     }
 }

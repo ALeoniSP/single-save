@@ -36,7 +36,7 @@ public class R2dbcSavePointService implements SavePointService {
                     }
 
                     SavePointEntity toSave = new SavePointEntity(
-                            UUID.randomUUID(),
+                            null,
                             provider,
                             providerSubject,
                             norm,

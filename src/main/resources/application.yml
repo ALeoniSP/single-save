@@ -36,10 +36,29 @@ spring:
 server:
   port: 8080
 
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
 logging:
   level:
+    root: INFO
+    com.aleonisp.singlesave: INFO
     org.flywaydb: INFO
-    org.springframework.boot.autoconfigure.flyway: DEBUG
-    com.zaxxer.hikari: INFO
-    org.springframework.r2dbc: INFO
-    io.r2dbc.postgresql: INFO
+    org.springframework.boot.autoconfigure.flyway: INFO
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.springframework.data.r2dbc: WARN
+    org.springframework.r2dbc.core: WARN
+    io.r2dbc.postgresql: WARN
+    reactor.netty: WARN

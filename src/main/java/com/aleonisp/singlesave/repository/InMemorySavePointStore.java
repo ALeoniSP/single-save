@@ -4,38 +4,36 @@ import com.aleonisp.singlesave.dto.SavePointResponse;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
 public class InMemorySavePointStore {
 
-    private final ConcurrentHashMap<String, CopyOnWriteArrayList<SavePointResponse>> storeByUser = new ConcurrentHashMap<>();
+    private final Map<UUID, List<SavePointResponse>> data = new ConcurrentHashMap<>();
 
-    private static String key(String provider, String providerSubject) {
-        return provider + "|" + providerSubject;
-    }
+    public SavePointResponse add(UUID userId, String action) {
+        List<SavePointResponse> savePoints = data.computeIfAbsent(userId, ignored -> new ArrayList<>());
 
-    public SavePointResponse add(String provider, String providerSubject, String action) {
-        SavePointResponse sp = new SavePointResponse(
+        SavePointResponse savePoint = new SavePointResponse(
                 UUID.randomUUID(),
                 action,
                 Instant.now()
         );
-        storeByUser.computeIfAbsent(key(provider, providerSubject), k -> new CopyOnWriteArrayList<>())
-                .add(0, sp);
-        return sp;
+
+        savePoints.add(0, savePoint);
+        return savePoint;
     }
 
-    public List<SavePointResponse> list(String provider, String providerSubject) {
-        CopyOnWriteArrayList<SavePointResponse> list = storeByUser.get(key(provider, providerSubject));
-        return list == null ? List.of() : List.copyOf(list);
+    public List<SavePointResponse> list(UUID userId) {
+        return data.getOrDefault(userId, List.of());
     }
 
-    public SavePointResponse latestOrNull(String provider, String providerSubject) {
-        CopyOnWriteArrayList<SavePointResponse> list = storeByUser.get(key(provider, providerSubject));
-        return (list == null || list.isEmpty()) ? null : list.getFirst();
+    public SavePointResponse latestOrNull(UUID userId) {
+        List<SavePointResponse> savePoints = data.get(userId);
+        if (savePoints == null || savePoints.isEmpty()) {
+            return null;
+        }
+        return savePoints.getFirst();
     }
 }

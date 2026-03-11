@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.MethodNotAllowedException;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebInputException;
 
@@ -30,14 +31,25 @@ public class GlobalErrorHandler {
                 ));
     }
 
+    @ExceptionHandler(MethodNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotAllowed(MethodNotAllowedException ex, ServerWebExchange exchange) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(new ErrorResponse(
+                        HttpStatus.METHOD_NOT_ALLOWED.value(),
+                        "METHOD_NOT_ALLOWED",
+                        ex.getMessage(),
+                        exchange.getRequest().getPath().value(),
+                        Instant.now()
+                ));
+    }
+
     @ExceptionHandler(ServerWebInputException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(ServerWebInputException ex, ServerWebExchange exchange) {
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(status)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(
-                        status.value(),
+                        HttpStatus.BAD_REQUEST.value(),
                         "BAD_REQUEST",
-                        "Invalid request body",
+                        ex.getReason() != null ? ex.getReason() : "Invalid request",
                         exchange.getRequest().getPath().value(),
                         Instant.now()
                 ));
@@ -45,19 +57,14 @@ public class GlobalErrorHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, ServerWebExchange exchange) {
-        String path = exchange.getRequest().getPath().value();
-        log.error("Unhandled exception on {} {}",
-                exchange.getRequest().getMethod(),
-                path,
-                ex);
+        log.error("Unhandled exception on {} {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath().value(), ex);
 
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        return ResponseEntity.status(status)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse(
-                        status.value(),
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
                         "INTERNAL_ERROR",
                         "Unexpected error",
-                        path,
+                        exchange.getRequest().getPath().value(),
                         Instant.now()
                 ));
     }

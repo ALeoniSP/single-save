@@ -64,3 +64,9 @@ logging:
     reactor.netty.http.client: DEBUG
     reactor.netty.http.server: DEBUG
     org.springframework.web.reactive.function.client.ExchangeFunctions: DEBUG
+
+
+app:
+  ai:
+    api-key: ${OPENAI_API_KEY}
+    model: gpt-4.1-mini

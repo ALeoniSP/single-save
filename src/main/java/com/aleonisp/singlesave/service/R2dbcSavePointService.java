@@ -1,16 +1,16 @@
 package com.aleonisp.singlesave.service;
 
+import com.aleonisp.singlesave.dto.CreateSavePointRequest;
 import com.aleonisp.singlesave.dto.SavePointResponse;
 import com.aleonisp.singlesave.exception.DomainException;
 import com.aleonisp.singlesave.model.SavePointEntity;
 import com.aleonisp.singlesave.repository.SavePointRepository;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.UUID;
 
 @Service
 @Primary
@@ -19,54 +19,85 @@ public class R2dbcSavePointService implements SavePointService {
     private static final int MAX_ACTION_LEN = 120;
 
     private final SavePointRepository repo;
+    private final CurrentUserService currentUserService;
 
-    public R2dbcSavePointService(SavePointRepository repo) {
+    public R2dbcSavePointService(SavePointRepository repo,
+                                 CurrentUserService currentUserService) {
         this.repo = repo;
+        this.currentUserService = currentUserService;
     }
 
     @Override
-    public Mono<SavePointResponse> create(String provider, String providerSubject, String action) {
-        return Mono.fromSupplier(() -> normalize(action))
-                .flatMap(norm -> {
-                    if (norm.isBlank()) {
-                        return Mono.error(new DomainException("VALIDATION_ERROR", HttpStatus.BAD_REQUEST, "action must not be blank"));
-                    }
-                    if (norm.length() > MAX_ACTION_LEN) {
-                        return Mono.error(new DomainException("VALIDATION_ERROR", HttpStatus.BAD_REQUEST, "action too long (max 120)"));
-                    }
+    public Mono<SavePointResponse> create(OAuth2AuthenticationToken auth, CreateSavePointRequest request) {
+        return currentUserService.getCurrentUser(auth)
+                .map(currentUser -> {
+                    String normalizedAction = normalize(request.action());
+                    validateAction(normalizedAction);
 
-                    SavePointEntity toSave = new SavePointEntity(
+                    return new SavePointEntity(
                             null,
-                            provider,
-                            providerSubject,
-                            norm,
+                            currentUser.provider(),
+                            currentUser.subject(),
+                            normalizedAction,
                             null
                     );
-
-                    return repo.save(toSave)
-                            .map(this::toResponse);
-                });
+                })
+                .flatMap(repo::save)
+                .map(this::toResponse);
     }
 
     @Override
-    public Flux<SavePointResponse> list(String provider, String providerSubject, int limit) {
+    public Flux<SavePointResponse> list(OAuth2AuthenticationToken auth, int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 200));
-        return repo.findLatest(provider, providerSubject, safeLimit)
-                .map(this::toResponse);
+
+        return currentUserService.getCurrentUser(auth)
+                .flatMapMany(currentUser ->
+                        repo.findLatest(currentUser.provider(), currentUser.subject(), safeLimit)
+                                .map(this::toResponse)
+                );
     }
 
     @Override
-    public Mono<SavePointResponse> latest(String provider, String providerSubject) {
-        return repo.findLatestOne(provider, providerSubject)
-                .switchIfEmpty(Mono.error(new DomainException("SAVEPOINT_NOT_FOUND", HttpStatus.NOT_FOUND, "No savepoints found")))
+    public Mono<SavePointResponse> latest(OAuth2AuthenticationToken auth) {
+        return currentUserService.getCurrentUser(auth)
+                .flatMap(currentUser ->
+                        repo.findLatestOne(currentUser.provider(), currentUser.subject())
+                )
+                .switchIfEmpty(Mono.error(new DomainException(
+                        "SAVEPOINT_NOT_FOUND",
+                        HttpStatus.NOT_FOUND,
+                        "No savepoints found"
+                )))
                 .map(this::toResponse);
     }
 
-    private SavePointResponse toResponse(SavePointEntity e) {
-        return new SavePointResponse(e.id(), e.action(), e.createdAt());
+    private void validateAction(String action) {
+        if (action.isBlank()) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    HttpStatus.BAD_REQUEST,
+                    "action must not be blank"
+            );
+        }
+
+        if (action.length() > MAX_ACTION_LEN) {
+            throw new DomainException(
+                    "VALIDATION_ERROR",
+                    HttpStatus.BAD_REQUEST,
+                    "action too long (max 120)"
+            );
+        }
     }
 
-    private String normalize(String s) {
-        return s == null ? "" : s.trim();
+    private SavePointResponse toResponse(SavePointEntity entity) {
+        return new SavePointResponse(
+                entity.id(),
+                entity.action(),
+                entity.createdAt()
+        );
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

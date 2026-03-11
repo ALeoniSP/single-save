@@ -62,3 +62,8 @@ logging:
     org.springframework.r2dbc.core: WARN
     io.r2dbc.postgresql: WARN
     reactor.netty: WARN
+
+app:
+  ai:
+    api-key: ${OPENAI_API_KEY}
+    model: gpt-4.1-mini

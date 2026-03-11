@@ -2,8 +2,40 @@
 
 ## Unreleased
 
-- (next) Fix OAuth2 login UX (skip default login error page, direct redirect to Google)
-- (next) Improve /me response DTO and error handling
+- (next) Improve OpenAI error handling and retry strategy
+- (next) Fix static resource / 404 handling in GlobalErrorHandler
+
+---
+
+## v0.4
+
+- Added suggestion generation endpoint for SavePoints
+- Added suggestion service
+- Added OpenAI client integration
+- Added AI-based suggestion response flow using recent SavePoints
+- Improved end-to-end authenticated suggestion flow with Google OAuth2
+
+---
+
+## v0.3
+
+- Added AccountController
+- Added dev profile
+
+---
+
+## v0.2.1
+
+- Minor merge fix
+
+---
+
+## v0.2
+
+- Added Flyway migration
+- Added SavePoint controller
+- Added SavePoint repository
+- Added SavePoint service
 
 ---
 
